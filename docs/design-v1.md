@@ -6,7 +6,12 @@ major Dutch city-regions, connected by roads.
 ## Files
 
 - `index.html` — page shell, controls, overlay/event panels
-- `data.js` — region positions/population, road edges, resource keys, event definitions
+- `boundaries.js` — real municipality boundary polygons (lon/lat) for the
+  14 regions, fetched from PDOK and Douglas-Peucker simplified
+- `geo.js` — projects those polygons into the SVG viewBox, derives each
+  region's centroid (road anchors, labels, glow)
+- `data.js` — region metadata (name, population), road edges, resource
+  keys, event definitions
 - `sim.js` — pure simulation engine (no DOM knowledge): world state, `tick()`, `applyEvent()`
 - `app.js` — SVG rendering + UI wiring, reads sim state each tick
 - `style.css` — visual styling, including the "night map" power overlay
@@ -15,9 +20,12 @@ major Dutch city-regions, connected by roads.
 
 14 regions (Amsterdam, Rotterdam, Den Haag, Utrecht, Eindhoven, Tilburg,
 Groningen, Maastricht, Arnhem, Nijmegen, Breda, Zwolle, Enschede,
-Leeuwarden), positions hand-placed to loosely resemble NL geography — not
-real coordinates. Connected by 15 hand-picked road edges approximating the
-motorway network.
+Leeuwarden), rendered as their real municipality boundary (PDOK BRK
+bestuurlijke gebieden API, `gemeentegebied` collection — see
+`docs/resources.md`), simplified to ~40-135 points per region and
+projected into the map's SVG space. Connected by 15 hand-picked road edges
+(between region centroids) approximating the motorway network — not yet
+real road geometry.
 
 Each region tracks 5 resources (`power`, `water`, `drinkingwater`, `food`,
 `internet`), each 0–100, with per-tick `production` and `consumption`
@@ -51,12 +59,12 @@ player-driven "game" actions — it already goes through the same
 
 ## Known simplifications / next steps
 
-- Region shapes are simplified dots, not real administrative boundaries.
-  Real boundary polygons are available from the PDOK BRK bestuurlijke
-  gebieden API (see `docs/resources.md`).
-- Road geometry is straight lines between hand-placed points, not real
+- Road geometry is still straight lines between region centroids, not real
   route geometry. Real geometry available from Nationaal Wegenbestand
-  (NWB), also in `docs/resources.md`.
+  (NWB), see `docs/resources.md`.
+- Only each region's largest polygon ring is kept (small exclaves/islands
+  dropped) and boundaries are simplified (~0.0015° tolerance) — fine at
+  this map's zoom level, would need finer tolerance if zooming in.
 - All 5 resources currently share the same diffusion+cascade logic; food
   realistically moves by truck/supply-chain rather than instant grid-style
   diffusion — fine for a playable v1, worth revisiting if food mechanics
