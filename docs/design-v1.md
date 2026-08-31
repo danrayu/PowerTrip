@@ -12,6 +12,9 @@ major Dutch city-regions, connected by roads.
 - `geo.js` — projects those tiles + city points into the SVG viewBox
   (city point is used for road anchors, labels, glow — not a polygon
   centroid, so it lines up with the real city even on an irregular tile)
+- `provinces.js` — real provincie outlines from PDOK, drawn as a dashed
+  reference overlay on top of the region tiles for geographic context
+  (provinces are not simulation units)
 - `data.js` — region metadata (name, population), road edges, resource
   keys, event definitions
 - `sim.js` — pure simulation engine (no DOM knowledge): world state, `tick()`, `applyEvent()`

@@ -71,6 +71,18 @@ function buildStaticElements() {
     regionsGroup.appendChild(g);
   });
   svg.appendChild(regionsGroup);
+
+  const provincesGroup = document.createElementNS(SVG_NS, "g");
+  provincesGroup.setAttribute("id", "provinceBorders");
+  provincesGroup.style.pointerEvents = "none";
+  Object.entries(PROJECTED_PROVINCES).forEach(([name, points]) => {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("class", "province-border");
+    path.setAttribute("d", polygonPathD(points));
+    path.dataset.province = name;
+    provincesGroup.appendChild(path);
+  });
+  svg.appendChild(provincesGroup);
 }
 
 function render() {

@@ -140,6 +140,14 @@ button.active { background: var(--accent); border-color: var(--accent); }
   pointer-events: none;
   transition: opacity 0.4s ease, r 0.4s ease;
 }
+.province-border {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1;
+  stroke-opacity: 0.35;
+  stroke-dasharray: 3 3;
+}
+
 .region-label {
   fill: var(--text);
   font-size: 11px;
