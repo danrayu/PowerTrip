@@ -77,6 +77,16 @@ function buildStaticElements() {
   hoverLabel.style.display = "none";
   svg.appendChild(hoverLabel);
 
+  // Selection highlight: an outline-only path drawn above every tile, so
+  // selecting a (possibly tiny) region doesn't eat into its fill area the
+  // way thickening its own border would (SVG strokes straddle the path).
+  const selectOutline = document.createElementNS(SVG_NS, "path");
+  selectOutline.setAttribute("id", "selectOutline");
+  selectOutline.setAttribute("class", "region-select-outline");
+  selectOutline.style.pointerEvents = "none";
+  selectOutline.style.display = "none";
+  svg.appendChild(selectOutline);
+
   const provincesGroup = document.createElementNS(SVG_NS, "g");
   provincesGroup.setAttribute("id", "provinceBorders");
   provincesGroup.style.pointerEvents = "none";
@@ -111,11 +121,18 @@ function render() {
     line.classList.toggle("cut", cut);
   });
 
+  const selectOutline = document.getElementById("selectOutline");
+  if (selectedId && PROJECTED_REGIONS[selectedId]) {
+    selectOutline.setAttribute("d", polygonPathD(PROJECTED_REGIONS[selectedId].points));
+    selectOutline.style.display = "";
+  } else {
+    selectOutline.style.display = "none";
+  }
+
   document.querySelectorAll(".region-node").forEach((g) => {
     const region = state.regions[g.dataset.id];
     const shape = g.querySelector(".region-shape");
     const glow = g.querySelector(".glow");
-    g.classList.toggle("selected", g.dataset.id === selectedId);
 
     if (overlay === "events") {
       shape.setAttribute("fill", "#3d6fa5");

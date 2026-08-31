@@ -133,7 +133,8 @@ button.active { background: var(--accent); border-color: var(--accent); }
 .region-node:hover .region-shape {
   stroke: #ffffff88;
 }
-.region-node.selected .region-shape {
+.region-select-outline {
+  fill: none;
   stroke: #fff;
   stroke-width: 2.5;
 }
