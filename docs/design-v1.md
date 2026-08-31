@@ -23,43 +23,50 @@ major Dutch city-regions, connected by roads.
 
 ## Model
 
-14 regions (Amsterdam, Rotterdam, Den Haag, Utrecht, Eindhoven, Tilburg,
-Groningen, Maastricht, Arnhem, Nijmegen, Breda, Zwolle, Enschede,
-Leeuwarden). Connected by 15 hand-picked road edges (between each city's
-real point location) approximating the motorway network — not yet real
-road geometry.
+All 342 Dutch municipalities (gemeenten), one tile per real municipality.
+Connected by shared-border adjacency (see below) — 934 edges, not a
+hand-picked motorway-corridor approximation.
 
 ### Region shapes
 
 Regions are rendered as an actual tiling of the country — every point in
 the Netherlands belongs to exactly one region, and neighboring regions
-share a border — and every tile edge follows either a real province
-border or an internal split within a shared province, never cutting
-through a province arbitrarily. Built offline (not at runtime) as:
+share a border. Every tile *is* a real municipality (gemeente) boundary,
+not a stylized province split. Built offline (not at runtime) as:
 
-1. Each city's real center point fetched from PDOK Locatieserver
-   (`woonplaats` type — the town itself, not the municipality it
-   administratively belongs to, which can be centered far from the city).
-2. Real provincie polygons fetched from PDOK BRK bestuurlijke gebieden
-   (`provinciegebied` collection).
-3. Each province is assigned to whichever of the 14 cities are inside it:
-   - **exactly one city** → the whole province becomes that city's tile
-     (e.g. all of Utrecht province → the Utrecht tile)
-   - **multiple cities** (Overijssel: Zwolle/Enschede; Gelderland:
-     Arnhem/Nijmegen; Zuid-Holland: Den Haag/Rotterdam; Noord-Brabant:
-     Breda/Tilburg/Eindhoven) → the province is split between them via a
-     Voronoi diagram clipped to that province's polygon
-   - **no city** (Flevoland, Zeeland, Drenthe) → folded into the nearest
-     city's tile as a whole province (Flevoland → Zwolle, Zeeland →
-     Rotterdam, Drenthe → Groningen)
-4. Verified near-zero overlap (<0.01%, floating-point simplification
-   noise) and full national coverage.
-5. Baked into `boundaries.js` as `GEMEENTE_BOUNDARIES` (tile polygon per
-   region) and `CITY_POINTS` (real city coordinate per region).
+1. All 342 `gemeentegebied` features fetched in one call from PDOK BRK
+   bestuurlijke gebieden (no pagination needed — the collection fits
+   under the default query limit).
+2. Each municipality polygon clipped to the national outline
+   (`landgebied` collection).
+3. Each polygon simplified (Douglas-Peucker, ~30m tolerance, topology
+   preserved) to keep `boundaries.js` a reasonable size — raw PDOK vertex
+   density produced a 14MB file; simplified it's ~800KB.
+4. Adjacency (`ROADS` in `data.js`) derived automatically: an edge exists
+   between any two municipalities whose (slightly buffered, to bridge
+   floating-point gaps) polygons touch.
+5. Each tile's anchor point (`CITY_POINTS`, used for road lines, glow
+   marker, hover label) is the polygon's `representative_point()` —
+   guaranteed inside the shape. Not a geocoded town center: at 342 tiles,
+   342 individual PDOK Locatieserver calls no longer materially change
+   the map over a fast in-polygon point.
+6. Population (`pop` in `data.js`, drives glow-marker sizing only) comes
+   from CBS StatLine table `83765NED` (`AantalInwoners`), matched by
+   gemeente code. A handful of municipalities formed by post-2020 mergers
+   (e.g. Land van Cuijk, Voorne aan Zee) aren't in that table; their `pop`
+   is an area × average-density estimate instead — fine for glow sizing,
+   not accurate for anything else.
+7. Baked into `boundaries.js` as `GEMEENTE_BOUNDARIES` (tile polygon per
+   region) and `CITY_POINTS` (anchor point per region), and into
+   `data.js` as `REGIONS`/`ROADS`.
 
-Region shapes are therefore province-accurate at every internal border
-they touch, but are still a stylized "which city owns which province(s)"
-partition, not real municipality (gemeente) boundaries.
+`sim.js` is unaffected by this change — it only ever consumed `ROADS` as
+an edge list to build a neighbor map, regardless of how those edges were
+derived.
+
+At this density, per-tile labels are shown on hover (and in the region
+info panel on click) rather than always-on, to keep the map legible —
+see `showHoverLabel()`/`hideHoverLabel()` in `app.js`.
 
 Each region tracks 5 resources (`power`, `water`, `drinkingwater`, `food`,
 `internet`), each 0–100, with per-tick `production` and `consumption`
@@ -93,12 +100,14 @@ player-driven "game" actions — it already goes through the same
 
 ## Known simplifications / next steps
 
-- Road geometry is still straight lines between city points, not real
-  route geometry. Real geometry available from Nationaal Wegenbestand
+- Road geometry is still straight lines between tile anchor points, not
+  real route geometry. Real geometry available from Nationaal Wegenbestand
   (NWB), see `docs/resources.md`.
-- Region tiles are a nearest-city Voronoi split, not real administrative
-  boundaries (see "Region shapes" above) — revisit if the distinction
-  between "region" and "municipality/provincie" starts to matter.
+- `CITY_POINTS` are polygon representative points, not real town centers —
+  fine for anchoring road lines/labels but not meant as a precise city
+  coordinate.
+- `pop` for a handful of post-2020 merged municipalities is an area-density
+  estimate, not a real CBS figure (see "Region shapes" above).
 - All 5 resources currently share the same diffusion+cascade logic; food
   realistically moves by truck/supply-chain rather than instant grid-style
   diffusion — fine for a playable v1, worth revisiting if food mechanics

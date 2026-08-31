@@ -60,17 +60,22 @@ function buildStaticElements() {
     shape.setAttribute("d", polygonPathD(proj.points));
     g.appendChild(shape);
 
-    const label = document.createElementNS(SVG_NS, "text");
-    label.setAttribute("x", cx);
-    label.setAttribute("y", cy);
-    label.setAttribute("class", "region-label");
-    label.textContent = proj.name;
-    g.appendChild(label);
-
+    // No always-on label at this density (342 tiles) — name shows in a
+    // hover tooltip instead (see hoverLabel below), plus in the region
+    // info panel on click.
+    g.addEventListener("mouseenter", () => showHoverLabel(proj.name, cx, cy));
+    g.addEventListener("mouseleave", hideHoverLabel);
     g.addEventListener("click", () => selectRegion(r.id));
     regionsGroup.appendChild(g);
   });
   svg.appendChild(regionsGroup);
+
+  const hoverLabel = document.createElementNS(SVG_NS, "text");
+  hoverLabel.setAttribute("id", "hoverLabel");
+  hoverLabel.setAttribute("class", "region-label hover-label");
+  hoverLabel.style.pointerEvents = "none";
+  hoverLabel.style.display = "none";
+  svg.appendChild(hoverLabel);
 
   const provincesGroup = document.createElementNS(SVG_NS, "g");
   provincesGroup.setAttribute("id", "provinceBorders");
@@ -83,6 +88,18 @@ function buildStaticElements() {
     provincesGroup.appendChild(path);
   });
   svg.appendChild(provincesGroup);
+}
+
+function showHoverLabel(name, x, y) {
+  const label = document.getElementById("hoverLabel");
+  label.setAttribute("x", x);
+  label.setAttribute("y", y);
+  label.textContent = name;
+  label.style.display = "";
+}
+
+function hideHoverLabel() {
+  document.getElementById("hoverLabel").style.display = "none";
 }
 
 function render() {

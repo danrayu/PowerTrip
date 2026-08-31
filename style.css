@@ -117,7 +117,8 @@ button.active { background: var(--accent); border-color: var(--accent); }
 
 .road {
   stroke: #4a5568;
-  stroke-width: 3;
+  stroke-width: 1;
+  stroke-opacity: 0.5;
 }
 .road.cut {
   stroke: #7a2f2f;
