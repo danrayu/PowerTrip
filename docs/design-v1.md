@@ -33,25 +33,33 @@ road geometry.
 
 Regions are rendered as an actual tiling of the country — every point in
 the Netherlands belongs to exactly one region, and neighboring regions
-share a border — rather than 14 separate shapes floating with gaps
-between them. Built offline (not at runtime) as:
+share a border — and every tile edge follows either a real province
+border or an internal split within a shared province, never cutting
+through a province arbitrarily. Built offline (not at runtime) as:
 
 1. Each city's real center point fetched from PDOK Locatieserver
    (`woonplaats` type — the town itself, not the municipality it
    administratively belongs to, which can be centered far from the city).
-2. The national outline fetched from PDOK BRK bestuurlijke gebieden
-   (`landgebied` collection).
-3. A Voronoi diagram computed over the 14 city points (scipy), clipped to
-   that national outline (shapely) — each city "claims" the area closest
-   to it, bounded by the coastline/border. Verified to have zero overlap
-   and full coverage.
-4. Baked into `boundaries.js` as `GEMEENTE_BOUNDARIES` (tile polygon per
+2. Real provincie polygons fetched from PDOK BRK bestuurlijke gebieden
+   (`provinciegebied` collection).
+3. Each province is assigned to whichever of the 14 cities are inside it:
+   - **exactly one city** → the whole province becomes that city's tile
+     (e.g. all of Utrecht province → the Utrecht tile)
+   - **multiple cities** (Overijssel: Zwolle/Enschede; Gelderland:
+     Arnhem/Nijmegen; Zuid-Holland: Den Haag/Rotterdam; Noord-Brabant:
+     Breda/Tilburg/Eindhoven) → the province is split between them via a
+     Voronoi diagram clipped to that province's polygon
+   - **no city** (Flevoland, Zeeland, Drenthe) → folded into the nearest
+     city's tile as a whole province (Flevoland → Zwolle, Zeeland →
+     Rotterdam, Drenthe → Groningen)
+4. Verified near-zero overlap (<0.01%, floating-point simplification
+   noise) and full national coverage.
+5. Baked into `boundaries.js` as `GEMEENTE_BOUNDARIES` (tile polygon per
    region) and `CITY_POINTS` (real city coordinate per region).
 
-This means region shapes are a stylized nearest-city partition, not real
-administrative or cultural boundaries — reasonable for "which region does
-this event affect," not a substitute for real provincie/gemeente borders
-if that distinction ever matters later.
+Region shapes are therefore province-accurate at every internal border
+they touch, but are still a stylized "which city owns which province(s)"
+partition, not real municipality (gemeente) boundaries.
 
 Each region tracks 5 resources (`power`, `water`, `drinkingwater`, `food`,
 `internet`), each 0–100, with per-tick `production` and `consumption`
