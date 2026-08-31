@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Power Trip</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Power Trip <span class="sub">— what happens when the systems stop</span></h1>
+    <div class="controls">
+      <button id="playBtn">▶ Play</button>
+      <button id="tickBtn">Step</button>
+      <label>Speed
+        <input type="range" id="speed" min="200" max="2000" value="800" step="100">
+      </label>
+      <div class="tick-counter">Tick: <span id="tickCount">0</span></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="overlay-panel">
+      <h3>Overlay</h3>
+      <div class="overlay-buttons">
+        <button data-overlay="events" class="active">Regions &amp; Events</button>
+        <button data-overlay="power">Power (night map)</button>
+        <button data-overlay="food">Food supply</button>
+        <button data-overlay="water">Water</button>
+        <button data-overlay="drinkingwater">Drinking water</button>
+        <button data-overlay="internet">Internet</button>
+      </div>
+
+      <h3>Selected region</h3>
+      <div id="regionInfo" class="region-info">
+        <p class="muted">Click a region on the map.</p>
+      </div>
+
+      <h3>Trigger event</h3>
+      <div id="eventButtons" class="event-buttons">
+        <p class="muted">Select a region first.</p>
+      </div>
+
+      <h3>News</h3>
+      <div id="newsTicker" class="news-ticker"></div>
+    </aside>
+
+    <main class="map-wrap">
+      <svg id="map" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid meet"></svg>
+    </main>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="sim.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
