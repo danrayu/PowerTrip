@@ -1,8 +1,15 @@
-// Projects the real lon/lat municipality boundaries (GEMEENTE_BOUNDARIES,
-// from PDOK) into the SVG's 0..800 / 0..900 viewBox, and derives each
-// region's centroid (used for road anchors, labels, and the glow effect).
+// Projects the real lon/lat region tiles (GEMEENTE_BOUNDARIES) and city
+// points (CITY_POINTS) into the SVG's 0..800 / 0..900 viewBox.
 //
-// Simple equirectangular projection with a shared bbox across all regions,
+// GEMEENTE_BOUNDARIES holds a Voronoi cell per city, already clipped to
+// the real national outline (computed offline — see boundaries.js header),
+// so the tiles are contiguous: they share borders with their neighbors
+// instead of floating as separate shapes. CITY_POINTS holds each city's
+// actual town-center coordinate (not a polygon centroid), used as the
+// road-anchor / label position so it lines up with the real city, even
+// when its tile is irregularly shaped.
+//
+// Simple equirectangular projection with a shared bbox across all tiles,
 // scaled/padded to fit the viewBox — accurate enough at this zoom level
 // for the Netherlands' latitude range.
 
@@ -37,34 +44,15 @@ function computeProjectedRegions() {
     return [x, y];
   }
 
-  function centroid(points) {
-    // polygon centroid (shoelace-weighted); falls back to averaging if degenerate
-    let area = 0, cx = 0, cy = 0;
-    for (let i = 0; i < points.length - 1; i++) {
-      const [x1, y1] = points[i];
-      const [x2, y2] = points[i + 1];
-      const cross = x1 * y2 - x2 * y1;
-      area += cross;
-      cx += (x1 + x2) * cross;
-      cy += (y1 + y2) * cross;
-    }
-    area /= 2;
-    if (Math.abs(area) < 1e-6) {
-      const n = points.length;
-      const avg = points.reduce((a, p) => [a[0] + p[0], a[1] + p[1]], [0, 0]);
-      return [avg[0] / n, avg[1] / n];
-    }
-    return [cx / (6 * area), cy / (6 * area)];
-  }
-
   const projected = {};
   ids.forEach((id) => {
     const points = GEMEENTE_BOUNDARIES[id].ring.map(project);
-    const [cx, cy] = centroid(points);
+    const city = CITY_POINTS[id];
+    const [px, py] = project([city.lon, city.lat]);
     projected[id] = {
       name: GEMEENTE_BOUNDARIES[id].name,
       points,
-      centroid: { x: cx, y: cy },
+      centroid: { x: px, y: py }, // actual city-center point, not polygon centroid
     };
   });
   return projected;

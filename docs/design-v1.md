@@ -6,10 +6,12 @@ major Dutch city-regions, connected by roads.
 ## Files
 
 - `index.html` — page shell, controls, overlay/event panels
-- `boundaries.js` — real municipality boundary polygons (lon/lat) for the
-  14 regions, fetched from PDOK and Douglas-Peucker simplified
-- `geo.js` — projects those polygons into the SVG viewBox, derives each
-  region's centroid (road anchors, labels, glow)
+- `boundaries.js` — a Voronoi tile per city (region shape) clipped to the
+  real national outline, plus each city's actual town-center coordinate;
+  computed offline from PDOK data (see "Region shapes" below)
+- `geo.js` — projects those tiles + city points into the SVG viewBox
+  (city point is used for road anchors, labels, glow — not a polygon
+  centroid, so it lines up with the real city even on an irregular tile)
 - `data.js` — region metadata (name, population), road edges, resource
   keys, event definitions
 - `sim.js` — pure simulation engine (no DOM knowledge): world state, `tick()`, `applyEvent()`
@@ -20,12 +22,33 @@ major Dutch city-regions, connected by roads.
 
 14 regions (Amsterdam, Rotterdam, Den Haag, Utrecht, Eindhoven, Tilburg,
 Groningen, Maastricht, Arnhem, Nijmegen, Breda, Zwolle, Enschede,
-Leeuwarden), rendered as their real municipality boundary (PDOK BRK
-bestuurlijke gebieden API, `gemeentegebied` collection — see
-`docs/resources.md`), simplified to ~40-135 points per region and
-projected into the map's SVG space. Connected by 15 hand-picked road edges
-(between region centroids) approximating the motorway network — not yet
-real road geometry.
+Leeuwarden). Connected by 15 hand-picked road edges (between each city's
+real point location) approximating the motorway network — not yet real
+road geometry.
+
+### Region shapes
+
+Regions are rendered as an actual tiling of the country — every point in
+the Netherlands belongs to exactly one region, and neighboring regions
+share a border — rather than 14 separate shapes floating with gaps
+between them. Built offline (not at runtime) as:
+
+1. Each city's real center point fetched from PDOK Locatieserver
+   (`woonplaats` type — the town itself, not the municipality it
+   administratively belongs to, which can be centered far from the city).
+2. The national outline fetched from PDOK BRK bestuurlijke gebieden
+   (`landgebied` collection).
+3. A Voronoi diagram computed over the 14 city points (scipy), clipped to
+   that national outline (shapely) — each city "claims" the area closest
+   to it, bounded by the coastline/border. Verified to have zero overlap
+   and full coverage.
+4. Baked into `boundaries.js` as `GEMEENTE_BOUNDARIES` (tile polygon per
+   region) and `CITY_POINTS` (real city coordinate per region).
+
+This means region shapes are a stylized nearest-city partition, not real
+administrative or cultural boundaries — reasonable for "which region does
+this event affect," not a substitute for real provincie/gemeente borders
+if that distinction ever matters later.
 
 Each region tracks 5 resources (`power`, `water`, `drinkingwater`, `food`,
 `internet`), each 0–100, with per-tick `production` and `consumption`
@@ -59,12 +82,12 @@ player-driven "game" actions — it already goes through the same
 
 ## Known simplifications / next steps
 
-- Road geometry is still straight lines between region centroids, not real
+- Road geometry is still straight lines between city points, not real
   route geometry. Real geometry available from Nationaal Wegenbestand
   (NWB), see `docs/resources.md`.
-- Only each region's largest polygon ring is kept (small exclaves/islands
-  dropped) and boundaries are simplified (~0.0015° tolerance) — fine at
-  this map's zoom level, would need finer tolerance if zooming in.
+- Region tiles are a nearest-city Voronoi split, not real administrative
+  boundaries (see "Region shapes" above) — revisit if the distinction
+  between "region" and "municipality/provincie" starts to matter.
 - All 5 resources currently share the same diffusion+cascade logic; food
   realistically moves by truck/supply-chain rather than instant grid-style
   diffusion — fine for a playable v1, worth revisiting if food mechanics
