@@ -20,6 +20,10 @@ function heatColor(value) {
 function buildStaticElements() {
   svg.innerHTML = "";
 
+  const viewport = document.createElementNS(SVG_NS, "g");
+  viewport.setAttribute("id", "viewport");
+  svg.appendChild(viewport);
+
   const roadsGroup = document.createElementNS(SVG_NS, "g");
   roadsGroup.setAttribute("id", "roads");
   ROADS.forEach(([aId, bId]) => {
@@ -35,7 +39,7 @@ function buildStaticElements() {
     line.dataset.b = bId;
     roadsGroup.appendChild(line);
   });
-  svg.appendChild(roadsGroup);
+  viewport.appendChild(roadsGroup);
 
   const regionsGroup = document.createElementNS(SVG_NS, "g");
   regionsGroup.setAttribute("id", "regionNodes");
@@ -68,14 +72,14 @@ function buildStaticElements() {
     g.addEventListener("click", () => selectRegion(r.id));
     regionsGroup.appendChild(g);
   });
-  svg.appendChild(regionsGroup);
+  viewport.appendChild(regionsGroup);
 
   const hoverLabel = document.createElementNS(SVG_NS, "text");
   hoverLabel.setAttribute("id", "hoverLabel");
   hoverLabel.setAttribute("class", "region-label hover-label");
   hoverLabel.style.pointerEvents = "none";
   hoverLabel.style.display = "none";
-  svg.appendChild(hoverLabel);
+  viewport.appendChild(hoverLabel);
 
   // Selection highlight: an outline-only path drawn above every tile, so
   // selecting a (possibly tiny) region doesn't eat into its fill area the
@@ -85,7 +89,7 @@ function buildStaticElements() {
   selectOutline.setAttribute("class", "region-select-outline");
   selectOutline.style.pointerEvents = "none";
   selectOutline.style.display = "none";
-  svg.appendChild(selectOutline);
+  viewport.appendChild(selectOutline);
 
   const provincesGroup = document.createElementNS(SVG_NS, "g");
   provincesGroup.setAttribute("id", "provinceBorders");
@@ -97,7 +101,7 @@ function buildStaticElements() {
     path.dataset.province = name;
     provincesGroup.appendChild(path);
   });
-  svg.appendChild(provincesGroup);
+  viewport.appendChild(provincesGroup);
 }
 
 function showHoverLabel(name, x, y) {
@@ -243,6 +247,75 @@ document.getElementById("speed").addEventListener("input", (e) => {
 document.querySelectorAll(".overlay-buttons button").forEach((b) => {
   b.addEventListener("click", () => setOverlay(b.dataset.overlay));
 });
+
+// --- Zoom & pan ---
+// Applied as a transform on the #viewport group only, so every layer
+// (roads, tiles, hover/selection outlines, province borders) pans/zooms
+// together and all existing hit-testing/coordinates stay untouched.
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 8;
+let zoom = { k: 1, tx: 0, ty: 0 };
+
+function applyZoom() {
+  document.getElementById("viewport").setAttribute(
+    "transform",
+    `translate(${zoom.tx},${zoom.ty}) scale(${zoom.k})`
+  );
+}
+
+// Screen (client) point -> viewBox-space point. svg#map's own CTM maps
+// screen pixels to the 0..800/0..900 viewBox space based on viewBox +
+// element size alone — it's unaffected by the transform we put on the
+// inner #viewport group, so this stays correct at any zoom/pan level.
+function toSvgPoint(clientX, clientY) {
+  const pt = svg.createSVGPoint();
+  pt.x = clientX;
+  pt.y = clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+function zoomAt(clientX, clientY, factor) {
+  const p = toSvgPoint(clientX, clientY);
+  const newK = clamp(zoom.k * factor, MIN_ZOOM, MAX_ZOOM);
+  // Keep the point under the cursor fixed on screen: solve for the new
+  // translation given the map-space point currently under the cursor.
+  const ox = (p.x - zoom.tx) / zoom.k;
+  const oy = (p.y - zoom.ty) / zoom.k;
+  zoom = { k: newK, tx: p.x - newK * ox, ty: p.y - newK * oy };
+  applyZoom();
+}
+
+svg.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const factor = Math.exp(-e.deltaY * 0.0015);
+  zoomAt(e.clientX, e.clientY, factor);
+}, { passive: false });
+
+let panning = false;
+let panLast = null;
+let panMoved = false; // did this drag move enough to not be a click?
+svg.addEventListener("mousedown", (e) => {
+  panning = true;
+  panMoved = false;
+  panLast = toSvgPoint(e.clientX, e.clientY);
+});
+window.addEventListener("mousemove", (e) => {
+  if (!panning) return;
+  const p = toSvgPoint(e.clientX, e.clientY);
+  zoom.tx += p.x - panLast.x;
+  zoom.ty += p.y - panLast.y;
+  if (Math.abs(p.x - panLast.x) > 0.5 || Math.abs(p.y - panLast.y) > 0.5) panMoved = true;
+  panLast = p;
+  applyZoom();
+});
+window.addEventListener("mouseup", () => { panning = false; });
+// A drag that actually panned shouldn't also select the region under the
+// cursor — swallow the click that follows it (capture phase, so it never
+// reaches a region-node's own click listener).
+svg.addEventListener("click", (e) => {
+  if (panMoved) { e.stopPropagation(); panMoved = false; }
+}, true);
+svg.style.cursor = "grab";
 
 buildStaticElements();
 render();
