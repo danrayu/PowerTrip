@@ -252,9 +252,16 @@ document.querySelectorAll(".overlay-buttons button").forEach((b) => {
 // Applied as a transform on the #viewport group only, so every layer
 // (roads, tiles, hover/selection outlines, province borders) pans/zooms
 // together and all existing hit-testing/coordinates stay untouched.
-const MIN_ZOOM = 1;
+const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 8;
-let zoom = { k: 1, tx: 0, ty: 0 };
+// Start zoomed out to MIN_ZOOM, centered in the viewBox (geo.js's
+// projector fills the viewBox at scale 1, so shrinking without
+// re-centering would leave the map pinned to the top-left corner).
+let zoom = {
+  k: MIN_ZOOM,
+  tx: (VIEW_W * (1 - MIN_ZOOM)) / 2,
+  ty: (VIEW_H * (1 - MIN_ZOOM)) / 2,
+};
 
 function applyZoom() {
   document.getElementById("viewport").setAttribute(
@@ -318,4 +325,5 @@ svg.addEventListener("click", (e) => {
 svg.style.cursor = "grab";
 
 buildStaticElements();
+applyZoom();
 render();
