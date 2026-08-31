@@ -7,8 +7,8 @@ let selectedId = null;
 let playing = false;
 let timer = null;
 
-function radiusFor(pop) {
-  return clamp(6 + Math.sqrt(pop) / 60, 6, 26);
+function glowRadiusFor(pop) {
+  return clamp(10 + Math.sqrt(pop) / 40, 14, 46);
 }
 
 // value 0-100 -> red (bad) to green (good)
@@ -23,8 +23,8 @@ function buildStaticElements() {
   const roadsGroup = document.createElementNS(SVG_NS, "g");
   roadsGroup.setAttribute("id", "roads");
   ROADS.forEach(([aId, bId]) => {
-    const a = REGIONS.find((r) => r.id === aId);
-    const b = REGIONS.find((r) => r.id === bId);
+    const a = PROJECTED_REGIONS[aId].centroid;
+    const b = PROJECTED_REGIONS[bId].centroid;
     const line = document.createElementNS(SVG_NS, "line");
     line.setAttribute("x1", a.x);
     line.setAttribute("y1", a.y);
@@ -40,6 +40,9 @@ function buildStaticElements() {
   const regionsGroup = document.createElementNS(SVG_NS, "g");
   regionsGroup.setAttribute("id", "regionNodes");
   REGIONS.forEach((r) => {
+    const proj = PROJECTED_REGIONS[r.id];
+    const { x: cx, y: cy } = proj.centroid;
+
     const g = document.createElementNS(SVG_NS, "g");
     g.setAttribute("class", "region-node");
     g.dataset.id = r.id;
@@ -47,22 +50,21 @@ function buildStaticElements() {
 
     const glow = document.createElementNS(SVG_NS, "circle");
     glow.setAttribute("class", "glow");
-    glow.setAttribute("cx", r.x);
-    glow.setAttribute("cy", r.y);
+    glow.setAttribute("cx", cx);
+    glow.setAttribute("cy", cy);
+    glow.setAttribute("r", glowRadiusFor(r.pop));
     g.appendChild(glow);
 
-    const circle = document.createElementNS(SVG_NS, "circle");
-    circle.setAttribute("class", "region-circle");
-    circle.setAttribute("cx", r.x);
-    circle.setAttribute("cy", r.y);
-    circle.setAttribute("r", radiusFor(r.pop));
-    g.appendChild(circle);
+    const shape = document.createElementNS(SVG_NS, "path");
+    shape.setAttribute("class", "region-shape");
+    shape.setAttribute("d", polygonPathD(proj.points));
+    g.appendChild(shape);
 
     const label = document.createElementNS(SVG_NS, "text");
-    label.setAttribute("x", r.x);
-    label.setAttribute("y", r.y - radiusFor(r.pop) - 6);
+    label.setAttribute("x", cx);
+    label.setAttribute("y", cy);
     label.setAttribute("class", "region-label");
-    label.textContent = r.name;
+    label.textContent = proj.name;
     g.appendChild(label);
 
     g.addEventListener("click", () => selectRegion(r.id));
@@ -82,24 +84,22 @@ function render() {
 
   document.querySelectorAll(".region-node").forEach((g) => {
     const region = state.regions[g.dataset.id];
-    const circle = g.querySelector(".region-circle");
+    const shape = g.querySelector(".region-shape");
     const glow = g.querySelector(".glow");
-    const r = radiusFor(region.pop);
-    glow.setAttribute("r", r * 2.2);
     g.classList.toggle("selected", g.dataset.id === selectedId);
 
     if (overlay === "events") {
-      circle.setAttribute("fill", "#3d6fa5");
+      shape.setAttribute("fill", "#3d6fa5");
       glow.setAttribute("opacity", 0);
     } else if (overlay === "power") {
       const p = region.stats.power;
       const lit = p > 20;
-      circle.setAttribute("fill", lit ? "#ffd27a" : "#2a2f3a");
+      shape.setAttribute("fill", lit ? "#ffd27a" : "#2a2f3a");
       glow.setAttribute("opacity", lit ? clamp(p / 100, 0.15, 0.8) : 0);
       glow.setAttribute("fill", "#ffe9b0");
     } else {
       const val = region.stats[overlay];
-      circle.setAttribute("fill", heatColor(val));
+      shape.setAttribute("fill", heatColor(val));
       glow.setAttribute("opacity", 0);
     }
   });

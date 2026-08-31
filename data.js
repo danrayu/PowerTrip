@@ -1,27 +1,28 @@
-// Rough (not geographically precise) layout of major Dutch city-regions
-// and the motorway-ish connections between them, used as tiles/nodes in
-// the simulation. Coordinates are hand-placed on an 800x900 viewBox to
-// loosely resemble the shape of the Netherlands.
+// Major Dutch city-regions used as tiles/nodes in the simulation.
+// Real municipality boundaries (used for position + shape) come from
+// GEMEENTE_BOUNDARIES (boundaries.js, sourced from PDOK — see geo.js and
+// docs/resources.md). `name` here is kept for display fallback; `pop` is
+// used to size the glow effect.
 //
 // Later upgrade path (see docs/resources.md):
-//   - region boundaries: PDOK BRK bestuurlijke gebieden API
-//   - real road geometry: Nationaal Wegenbestand (NWB)
+//   - real road geometry: Nationaal Wegenbestand (NWB) — roads below are
+//     still hand-picked motorway-corridor approximations, not real geometry.
 
 const REGIONS = [
-  { id: "groningen",   name: "Groningen",   x: 560, y: 80,  pop: 235000 },
-  { id: "leeuwarden",  name: "Leeuwarden",  x: 460, y: 90,  pop: 125000 },
-  { id: "zwolle",      name: "Zwolle",      x: 520, y: 230, pop: 130000 },
-  { id: "enschede",    name: "Enschede",    x: 660, y: 270, pop: 160000 },
-  { id: "amsterdam",   name: "Amsterdam",   x: 380, y: 260, pop: 900000 },
-  { id: "utrecht",     name: "Utrecht",     x: 440, y: 335, pop: 360000 },
-  { id: "arnhem",      name: "Arnhem",      x: 570, y: 350, pop: 160000 },
-  { id: "nijmegen",    name: "Nijmegen",    x: 545, y: 415, pop: 180000 },
-  { id: "denhaag",     name: "Den Haag",    x: 290, y: 340, pop: 550000 },
-  { id: "rotterdam",   name: "Rotterdam",   x: 340, y: 400, pop: 650000 },
-  { id: "breda",       name: "Breda",       x: 390, y: 470, pop: 185000 },
-  { id: "tilburg",     name: "Tilburg",     x: 440, y: 480, pop: 220000 },
-  { id: "eindhoven",   name: "Eindhoven",   x: 480, y: 520, pop: 235000 },
-  { id: "maastricht",  name: "Maastricht",  x: 500, y: 660, pop: 120000 },
+  { id: "groningen",   name: "Groningen",   pop: 235000 },
+  { id: "leeuwarden",  name: "Leeuwarden",  pop: 125000 },
+  { id: "zwolle",      name: "Zwolle",      pop: 130000 },
+  { id: "enschede",    name: "Enschede",    pop: 160000 },
+  { id: "amsterdam",   name: "Amsterdam",   pop: 900000 },
+  { id: "utrecht",     name: "Utrecht",     pop: 360000 },
+  { id: "arnhem",      name: "Arnhem",      pop: 160000 },
+  { id: "nijmegen",    name: "Nijmegen",    pop: 180000 },
+  { id: "denhaag",     name: "Den Haag",    pop: 550000 },
+  { id: "rotterdam",   name: "Rotterdam",   pop: 650000 },
+  { id: "breda",       name: "Breda",       pop: 185000 },
+  { id: "tilburg",     name: "Tilburg",     pop: 220000 },
+  { id: "eindhoven",   name: "Eindhoven",   pop: 235000 },
+  { id: "maastricht",  name: "Maastricht",  pop: 120000 },
 ];
 
 // Undirected road edges (roughly following A-road corridors).
