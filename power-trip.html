@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power Trip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="power-trip.css">
+</head>
+<body class="theme-light">
+
+  <div class="bw-overlay" id="bwOverlay"></div>
+
+  <div class="panel" id="panel">
+    <div class="row">
+      <div class="led-group">
+        <span class="led" id="led"></span>
+        <span>UNIT 04 — MAIN</span>
+      </div>
+      <span id="statusText">ONLINE</span>
+    </div>
+
+    <button class="stage" id="trigger" aria-label="Trip the power">
+      <h1 class="title">POWER TRIP</h1>
+      <p class="subtitle" id="subtitleText">click to power down</p>
+      <div class="meter" id="meter"></div>
+    </button>
+
+    <div class="footline">
+      <span>LOAD: <span id="loadReading">62%</span></span>
+      <span id="clockReading">--:--:--</span>
+    </div>
+  </div>
+
+  <div class="outage-mark" id="outageMark"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="power-trip.js"></script>
+
+</body>
+</html>
